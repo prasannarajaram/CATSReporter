@@ -1,0 +1,180 @@
+import pandas as pd
+import numpy as np
+import re
+
+dump = pd.ExcelFile('EXPORT.XLSX')
+df = pd.read_excel(dump, sheet_name='Sheet1')
+df.columns = [c.replace(' ', '_') for c in df.columns]
+df.columns = [c.replace('Number_(unit)', 'Hours') for c in df.columns]
+
+# Drop columns where all elements are NaN
+df = df.dropna(axis=1, how='all')
+
+# Eliminate unnecessary columns
+base_df = df.drop(["Counter", "Sending_PO_item",
+              "Acct_assgnmt_(Recr)", "Acct_assgnt_text", "Int._meas._unit",
+              "Created_on", "Last_change",
+              "Changed_by", "Approved_by", "Approval_date", "Work_Center"], axis=1)
+
+
+ # print(base_df.columns)
+
+# Index(['Counter', 'Sending_purch._order', 'Sending_PO_item',
+#        'Personnel_Number', 'Name_of_employee_or_applicant',
+#        'Acct_assgnmt_(Recr)', 'Acct_assgnt_text', 'General_receiver',
+#        'Number_(unit)', 'Int._meas._unit', 'Short_Text', 'Activity_Type',
+#        'Activity_Number', 'Plant', 'Created_on', 'Created_by', 'Last_change',
+#        'Changed_by', 'Approved_by', 'Approval_date', 'Document_number',
+#        'Work_Center']
+
+df = base_df.set_index('Date')
+
+m1 = df.index >= '2020-10-05'  # Start date for report
+m2 = df.index <= '2020-10-09'  # End date for report
+m3 = df.Plant == "F887"        # Select only CEC candidates
+m4 = df.Hours != 0             # Remove entries for which the hours are zero
+np_df = np.logical_and.reduce([m1, m2, m3, m4]) # Selects the current month
+
+pd_df = df[np_df] # Converting numpy array to Dataframe
+# print(pd_df)
+
+labe01_df = pd_df[pd_df.Activity_Type == "LABE01"]
+
+def no_entry_found(): # change this to be based on UID
+    "Check if anyone has not entered CATS for the duration"
+    
+    CEC_personnel = [398463, 50134664, 1028467, 788215, 784318, 50134131,
+                  1020828, 397825, 1021109, 788073, 1028530, 1021286,
+                  50125308, 1017322, 50123145, 50102217, 584616, 1026827,
+                  50111325, 50043027, 754981, 1032833, 1022476,
+                  50112317, 1021949, 1022432, 584617, 759004, 585159,
+                  1027625, 1020085, 589774, 1029526, 1100272, 1100258,
+                  1100746, 1100441, 1100682]
+
+    # 50140120 - Shankar Srinivasan - removed
+    personnel_id = pd_df['Personnel_Number'].unique()
+    for personnel in CEC_personnel:
+        if personnel not in personnel_id:
+            print(personnel)
+
+no_entry_found()
+
+def other_NWA_on_holiday():     # work in progress - #2 priority
+    "Expected General Receiver = 7500005531 0001 on a holiday"
+    holiday_df = pd.DataFrame() # create empty dataframe to append values later
+    holiday_list = ["2020-01-01", "2020-01-15", "2020-04-10",
+                    "2020-04-14", "2020-05-01", "2020-05-25", "2020-08-11",
+                    "2020-10-02", "2020-10-26", "2020-11-13", "2020-12-25"]
+                    # "2020-01-16", "2020-02-21", "2020-03-10", "2020-03-25"]
+    for holiday in holiday_list:
+        holiday_df = holiday_df.append(pd_df.loc[holiday])
+    other_NWA_on_leave = holiday_df[holiday_df.General_receiver != "7500005531 0001"]
+    if not other_NWA_on_leave.empty:
+        print("\n Other NWA on a holiday")
+        print("------------------------------------------------------------------------------------------------------------------")
+        print(other_NWA_on_leave)
+        print("------------------------------------------------------------------------------------------------------------------")    
+    
+other_NWA_on_holiday()
+
+
+def unfilled_weekly_quota():
+    "User has not entered 40 hours/week"
+
+    # df.groupby('X')['Y'].sum()
+    hours_df = pd_df.groupby("Created_by")['Hours'].sum()
+    res = hours_df[hours_df.lt(40)]
+    print('Unfilled Weekly quota of 40 hours')
+    print("------------------------------------------------------------------------------------------------------------------")
+    print(res)
+    print("------------------------------------------------------------------------------------------------------------------")
+
+unfilled_weekly_quota()
+
+
+def invalid_workcenter():
+    "Work center other than productivity format"
+    """
+    For all LABE01 hour ensure the use of new work center format e.g. "IEC-XX01" "IEC-XX02" format instead of "IEC-XX". 
+    ** Not working on it right now **
+    """
+    pass
+
+# invalid_workcenter()
+
+
+def invalid_task_id():
+    "Task ID not matching General receiver "
+    
+    has_short_text_df = labe01_df[~labe01_df.Short_Text.isnull()]
+    has_short_text_df['Gen_rx_Short_Text'] = has_short_text_df['General_receiver'] + ' ' + has_short_text_df['Short_Text']
+    # print(has_short_text_df)
+    
+    # has_unique_short_text_df = has_short_text_df['Gen_rx_Short_Text'].unique()
+    # print(has_unique_short_text_df)
+    # has_short_text_df = has_short_text_df.groupby(['General_receiver', 'Short_Text'], sort=False, as_index=False)['Short_Text'].first()
+    # print(type(has_unique_short_text_df))
+    
+    cec_nwa = pd.ExcelFile('CEC NWA.XLSX')
+    cec_nwa_df = pd.read_excel(cec_nwa, sheet_name='Sheet1')
+    cec_nwa_df = cec_nwa_df[cec_nwa_df['Status'] == 'Active']
+    cec_nwa_df = cec_nwa_df[cec_nwa_df['Task ID'].str.contains('PA')]
+    cec_nwa_df['CEC Network'] = cec_nwa_df['CEC Network'].apply(str)
+    cec_nwa_df['CEC Activity'] = cec_nwa_df['CEC Activity'].apply(lambda x: '{0:0>4}'.format(x))
+    cec_nwa_df['Gen_rx_Short_Text'] = cec_nwa_df['CEC Network'] + ' ' + cec_nwa_df['CEC Activity'] + ' ' + cec_nwa_df['Task ID']
+    # print(cec_nwa_df)
+    # print(cec_nwa_df.info())
+    # for Gen_rx_Short_Text in has_short_text_df['Gen_rx_Short_Text']:
+    #     print(len(Gen_rx_Short_Text))
+
+    check_task_id_df = pd.merge(has_short_text_df, cec_nwa_df, on=['Gen_rx_Short_Text'], how='left', indicator='Exist')
+    check_task_id_df['Exist'] = np.where(check_task_id_df.Exist == 'both', "Valid Task ID", "Invalid Task ID")
+    invalid_task_id_df = check_task_id_df[check_task_id_df['Exist'] == "Invalid Task ID"]
+    invalid_task_id_df.drop(['Task ID', 'CEC Network', 'CEC Activity', 'Status',
+                             'Comments', 'Company'], inplace=True, axis=1)
+    print(invalid_task_id_df)
+    
+# invalid_task_id()
+
+
+def no_task_ID():
+    "Check if LABE01 has a General receiver number starting with 75"
+    
+    no_short_txt_df = labe01_df[labe01_df.Short_Text.isnull()]
+    if not no_short_txt_df.empty:
+        print("\n LABE01 without Task ID")
+        print("------------------------------------------------------------------------------------------------------------------")
+        print(no_short_txt_df)
+        print("------------------------------------------------------------------------------------------------------------------")
+
+
+no_task_ID()
+
+
+def labe00_for_project():
+    "Check if LABE00 has a General receiver number **not** starting with 75"
+    
+    labe00_df = pd_df[pd_df.Activity_Type == "LABE00"]
+    labe00_error_df = labe00_df[~labe00_df['General_receiver'].str.startswith('75')].sort_values('Date')
+    if not labe00_error_df.empty:
+        print("\n LABE00 for Project NWA")
+        print("------------------------------------------------------------------------------------------------------------------")
+        print(labe00_error_df)
+        print("------------------------------------------------------------------------------------------------------------------")
+    
+
+labe00_for_project()
+
+
+def labe01_for_overhead():
+    "Check if LABE01 has a General receiver number starting with 75"
+    
+    labe01_error_df = labe01_df[labe01_df['General_receiver'].str.startswith('75')].sort_values('Date')
+    if not labe01_error_df.empty:
+        print("\n LABE01 for Overhead NWA")
+        print("------------------------------------------------------------------------------------------------------------------")
+        print(labe01_error_df)
+        print("------------------------------------------------------------------------------------------------------------------")
+
+
+labe01_for_overhead()

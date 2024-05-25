@@ -18,9 +18,9 @@ functionalities.
 While the functions implemented are self-explanatory, here is a brief descriptions for clarity
 
 ## No CATS entry found 
-
++
 Flags if there are no CATS entries for the employee for the given time period (week, month to date etc)
-
++
 ## Other NWA on a holiday
 
 Flags if the employee has entered a different NWA instead of a holiday NWA. The NWA's are defined in the

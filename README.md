@@ -18,6 +18,7 @@ functionalities.
 While the functions implemented are self-explanatory, here is a brief descriptions for clarity
 ![fa-crown](fa-crown.svg)
 
+<img src="https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/crown.svg" width="50" height="50">
 ## No CATS entry found 
 
 Flags if there are no CATS entries for the employee for the given time period (week, month to date etc)

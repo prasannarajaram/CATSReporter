@@ -87,7 +87,7 @@ def no_entry_found():  # change this to be based on UID
             'UA26827', 'ND31152', 'NB55227', 'U754981', 'UA22476',
             'UA21949', 'U585159',
             'U589774', 'UA29526', 'UB00272', 'UB00258',
-            'UB00746', 'UB00441', 'UB00682', 'UA33631', 'UB04967', 'UB08317' ]
+            'UB00441', 'UB00682', 'UA33631', 'UB04967', 'UB08317' ]
 
     no_entry_list = []
     created_by_df = pd_df['Created_by'].unique()

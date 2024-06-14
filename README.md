@@ -5,20 +5,18 @@
 The purpose of this tool is to flag the following anamolies in the CATS entered
 by employees
 
-1. No CATS entry found 
-2. Other NWA on a holiday
-3. Unfilled weekly quota
-4. LABE00 for project
-5. LABE01 for overhead
-6. Holiday NWA on a working 
+1. [No CATS entry found](https://github.com/prasannarajaram/CATSReporter?tab=readme-ov-file#No-CATS-entry-found) 
+2. [Other NWA on a holiday](https://github.com/prasannarajaram/CATSReporter?tab=readme-ov-file#other-nwa-on-a-holiday) 
+3. [Unfilled weekly quota](https://github.com/prasannarajaram/CATSReporter?tab=readme-ov-file#Unfilled-weekly-quota)
+4. [LABE00 for project](https://github.com/prasannarajaram/CATSReporter?tab=readme-ov-file#LABE00-for-project)
+5. [LABE01 for overhead](https://github.com/prasannarajaram/CATSReporter?tab=readme-ov-file#LABE01-for-overhead)
+6. [Holiday NWA on a working](https://github.com/prasannarajaram/CATSReporter?tab=readme-ov-file#Holiday-NWA-on-a-working)
 
 The above are defined by the CATS team at CEC level. Hence the tool implements the same
 functionalities.
 
 While the functions implemented are self-explanatory, here is a brief descriptions for clarity
-![fa-crown](fa-crown.svg)
 
-<img src="https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/crown.svg" width="50" height="50">
 ## No CATS entry found 
 
 Flags if there are no CATS entries for the employee for the given time period (week, month to date etc)
